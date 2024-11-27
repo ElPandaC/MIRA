@@ -9,5 +9,5 @@ telegram_chenal_id = ""
 telegram_chat_id = ""
 
 [base_settings]
-base_symbol = "BTC/USDT"
+base_symbol = "DOGE/USDT"
 base_days_deph = 30
