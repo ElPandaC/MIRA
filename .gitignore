@@ -1,0 +1,32 @@
+# Ignore IDEA project files and folders
+.idea/
+*.iml
+
+# Ignore target directory where compiled files are stored
+target/
+
+# Ignore Rust/Cargo specific files
+**/*.rs.bk
+Cargo.lock
+
+# Ignore build artifacts and debug logs
+*.d
+*.rlib
+*.so
+*.dylib
+*.dll
+*.exe
+*.out
+*.log
+
+# Ignore Rust doc builds
+doc/
+
+# Ignore temporary and backup files
+*.swp
+*.bak
+*~
+
+# Ignore OS generated files
+.DS_Store
+Thumbs.db
