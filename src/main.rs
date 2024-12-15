@@ -1,16 +1,72 @@
 use std::io;
+use std::collections::HashMap;
 use plotly::Plot;
 use plotly::Scatter3D;
+
+struct AllChars {
+    all_chars: Vec<char>,
+    length: i32,
+    weights: Vec<f64>,
+    char_map: HashMap<char, f64>,
+}
+
+impl AllChars {
+    fn new() -> Self {
+        let english_lowercase = 'a'..='z';
+        let english_uppercase = 'A'..='Z';
+        let russian_lowercase = 'а'..='я';
+        let russian_uppercase = 'А'..='Я';
+        let digits = '0'..='9';
+        let special_symbols = '!'..='/';
+        let special_symbols_2 = ':'..='@';
+        let special_symbols_3 = '['..='`';
+        let special_symbols_4 = '{'..='~';
+
+        let mut all_chars: Vec<char> = english_lowercase.chain(english_uppercase)
+            .chain(russian_lowercase)
+            .chain(russian_uppercase)
+            .chain(digits)
+            .chain(special_symbols)
+            .chain(special_symbols_2)
+            .chain(special_symbols_3)
+            .chain(special_symbols_4)
+            .chain(std::iter::once(' '))
+            .collect();
+
+        all_chars.sort();
+
+        let weights: Vec<f64> = all_chars.iter()
+            .map(|c| {
+                let unicode_value = *c as u32;
+                (unicode_value as f64 / 65536.0) * 100.0
+            })
+            .collect();
+
+        let mut char_map: HashMap<char, f64> = HashMap::new();
+        for (i, &c) in all_chars.iter().enumerate() {
+            char_map.insert(c, weights[i]);
+        }
+
+        AllChars {
+            all_chars: all_chars.clone(),
+            length: all_chars.len() as i32,
+            weights,
+            char_map,
+        }
+    }
+}
 
 mod neuron_network {
     pub enum ClassNeyron {
         Neyron,
+        Sinaps,
+        IntermediateNeuron,
     }
 
     pub enum Choise {
         ReturnOutput,
         AddNeuron,
-        ActivateNeuron
+        ActivateNeuron,
     }
 
     pub struct NeuronNetwork {
@@ -20,25 +76,45 @@ mod neuron_network {
     impl NeuronNetwork {
         pub fn new() -> Self {
             NeuronNetwork {
-                neurons: vec![Neuron::new(0.0, 0.0, 0.0)],
+                neurons: vec![Neuron::new(0.0, 0.0, 0.0, ClassNeyron::Neyron)],
             }
         }
 
         pub fn add_neuron(&mut self, x: f64, y: f64, z: f64) {
-            self.neurons.push(Neuron::new(x, y, z));
+            self.neurons.push(Neuron::new(x, y, z, ClassNeyron::Neyron));
         }
 
-        pub fn activate_neurons(&mut self) {
-            let mut new_neurons = Vec::new(); // временное хранилище для новых нейронов
+        pub fn activate_neurons(&mut self, x: f64, y: f64, z: f64, _weight: Option<&f64>) {
+            if let Some(neuron) = self.neurons.iter()
+                .find(|a| a.x == x && a.y == y && a.z == z) {
+
+                println!("Найден элемент: x={}, y={}, z={}", neuron.x, neuron.y, neuron.z);
+                match neuron.class {
+                    ClassNeyron::Neyron => {
+                        neuron.choise_action_neyron();
+                    }
+                    ClassNeyron::IntermediateNeuron => {
+                        neuron.choise_action_intermation_neuron();
+                    }
+                    ClassNeyron::Sinaps => {
+                        neuron.sinaps_operations();
+                    }
+                }
+
+            } else {
+                println!("Элемент не найден");
+            }
+
+            let mut new_neurons = Vec::new();
 
             for neuron in &self.neurons {
-                match neuron.choise_action() {
+                match neuron.choise_action_neyron() {
                     Choise::ReturnOutput => {
                         println!("Нейрон активировал функцию ответа пользователю");
                     }
                     Choise::AddNeuron => {
                         println!("Добавлен новый нейрон");
-                        new_neurons.push(Neuron::new(neuron.x + 1.0, neuron.y + 1.0, neuron.z + 1.0));
+                        new_neurons.push(Neuron::new(neuron.x + 1.0, neuron.y + 1.0, neuron.z + 1.0, ClassNeyron::Neyron));
                     }
                     Choise::ActivateNeuron => {
                         println!("Нейрон активировал функцию активации нейрона");
@@ -46,10 +122,8 @@ mod neuron_network {
                 }
             }
 
-            // Добавляем новые нейроны после завершения итерации
             self.neurons.extend(new_neurons);
         }
-
 
         pub fn get_neurons(&self) -> &Vec<Neuron> {
             &self.neurons
@@ -63,30 +137,40 @@ mod neuron_network {
         pub(crate) z: f64,
         weights: f64,
         weights_2: f64,
+        radius_1: f64,
+        radius_2: f64,
     }
 
     impl Neuron {
-        pub fn new(x: f64, y: f64, z: f64) -> Self {
-            let class = ClassNeyron::Neyron;
+        pub fn new(x: f64, y: f64, z: f64, class: ClassNeyron) -> Self {
             Neuron {
                 class,
                 x,
                 y,
                 z,
-                weights: 0.5,   // Значение по умолчанию
-                weights_2: -0.2, // Значение по умолчанию
+                weights: 0.5,
+                weights_2: -0.2,
+                radius_1: 0.5,
+                radius_2: 0.8,
             }
         }
 
-        pub fn choise_action(&self) -> Choise {
+        pub fn choise_action_neyron(&self) -> Choise {
             if self.weights * self.weights_2 > 0.5 {
                 Choise::ReturnOutput
             } else if self.weights * self.weights_2 < 0.0 {
                 Choise::AddNeuron
             } else {
-
+                Choise::ActivateNeuron
             }
+        }
 
+        pub fn choise_action_intermation_neuron(&self) {
+            //TODO Добавить выбор действия для промежуточного нейрона
+        }
+
+        pub fn sinaps_operations(&self) {
+            //TODO Добавить логику синапсической связи
         }
     }
 }
@@ -112,6 +196,7 @@ fn plot_neurons_3d(neurons: &[neuron_network::Neuron]) {
 }
 
 fn main() {
+    let chrars_list = AllChars::new();
     let mut input = String::new();
     let mut neuron_network = neuron_network::NeuronNetwork::new();
 
@@ -119,29 +204,25 @@ fn main() {
         println!("Введите запрос (или 'flugegenhaime' для выхода):");
         input.clear();
         io::stdin().read_line(&mut input).expect("Ошибка чтения строки");
-
         let trimmed_input = input.trim();
         if trimmed_input.is_empty() {
             println!("Пожалуйста, введите хоть что-то.");
         } else if trimmed_input == "flugegenhaime" {
             break;
         } else {
-            // Добавляем нейрон с координатами, считанными из строки (например, "1.0 2.0 3.0")
-            let coords: Vec<f64> = trimmed_input
-                .split_whitespace()
-                .filter_map(|s| s.parse().ok())
-                .collect();
-
-            if coords.len() == 3 {
-                neuron_network.add_neuron(coords[0], coords[1], coords[2]);
-            } else {
-                println!("Введите три числа, разделенные пробелами, для координат x, y, z.");
+            for input_chars in trimmed_input.chars() {
+                match chrars_list.char_map.get(&input_chars) {
+                    Some(value) => {
+                        println!("Вес символа {}: {:?}", input_chars, value);
+                        let weight = chrars_list.char_map.get(&input_chars);
+                        neuron_network.activate_neurons(0.0, 0.0, 0.0, weight);
+                        display_neurons_as_points(neuron_network.get_neurons());
+                        println!("Отображение 3D-графика нейронов...");
+                        plot_neurons_3d(neuron_network.get_neurons());
+                    },
+                    None => println!("Нужный символ не найден"),
+                }
             }
-
-            neuron_network.activate_neurons();
-            display_neurons_as_points(neuron_network.get_neurons());
-            println!("Отображение 3D-графика нейронов...");
-            plot_neurons_3d(neuron_network.get_neurons());
         }
     }
 
