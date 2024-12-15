@@ -76,22 +76,41 @@ mod neuron_network {
     impl NeuronNetwork {
         pub fn new() -> Self {
             NeuronNetwork {
-                neurons: vec![Neuron::new(0.0, 0.0, 0.0, ClassNeyron::Neyron)],
+                neurons: vec![Neuron::new(0.0,
+                                          0.0,
+                                          0.0,
+                                          ClassNeyron::Neyron,
+                                          1.0,
+                                          1.0, 1.0 )], //TODO: Добавить динамические веса
             }
         }
 
-        pub fn add_neuron(&mut self, x: f64, y: f64, z: f64) {
-            self.neurons.push(Neuron::new(x, y, z, ClassNeyron::Neyron));
-        }
-
-        pub fn activate_neurons(&mut self, x: f64, y: f64, z: f64, _weight: Option<&f64>) {
+        pub fn activate_neurons(&mut self, x: f64, y: f64, z: f64, weight: Option<&f64>) {
+            let mut new_neurons = Vec::new();
             if let Some(neuron) = self.neurons.iter()
                 .find(|a| a.x == x && a.y == y && a.z == z) {
 
                 println!("Найден элемент: x={}, y={}, z={}", neuron.x, neuron.y, neuron.z);
                 match neuron.class {
                     ClassNeyron::Neyron => {
-                        neuron.choise_action_neyron();
+                        match neuron.choise_action_neyron(weight) {
+                            Choise::ReturnOutput => {
+                                println!("Нейрон активировал функцию ответа пользователю");
+                            }
+                            Choise::AddNeuron => {
+                                println!("Добавлен новый нейрон");
+                                new_neurons.push(Neuron::new(neuron.x + ((neuron.weights_neuron+neuron.weights_choise)*weight.unwrap_or(&0.0)),
+                                                             neuron.y + ((neuron.weights_neuron+neuron.weights_choise)*weight.unwrap_or(&0.0)),
+                                                             neuron.z + ((neuron.weights_neuron+neuron.weights_choise)*weight.unwrap_or(&0.0)),
+                                                             ClassNeyron::Neyron,
+                                                             neuron.weights_neuron,
+                                                             neuron.weights_choise,
+                                                             *weight.unwrap_or(&0.0)));
+                            }
+                            Choise::ActivateNeuron => {
+                                println!("Нейрон активировал функцию активации нейрона");
+                            }
+                        }
                     }
                     ClassNeyron::IntermediateNeuron => {
                         neuron.choise_action_intermation_neuron();
@@ -103,23 +122,6 @@ mod neuron_network {
 
             } else {
                 println!("Элемент не найден");
-            }
-
-            let mut new_neurons = Vec::new();
-
-            for neuron in &self.neurons {
-                match neuron.choise_action_neyron() {
-                    Choise::ReturnOutput => {
-                        println!("Нейрон активировал функцию ответа пользователю");
-                    }
-                    Choise::AddNeuron => {
-                        println!("Добавлен новый нейрон");
-                        new_neurons.push(Neuron::new(neuron.x + 1.0, neuron.y + 1.0, neuron.z + 1.0, ClassNeyron::Neyron));
-                    }
-                    Choise::ActivateNeuron => {
-                        println!("Нейрон активировал функцию активации нейрона");
-                    }
-                }
             }
 
             self.neurons.extend(new_neurons);
@@ -135,30 +137,37 @@ mod neuron_network {
         pub(crate) x: f64,
         pub(crate) y: f64,
         pub(crate) z: f64,
-        weights: f64,
-        weights_2: f64,
+        weights_neuron: f64,
+        weights_choise: f64,
         radius_1: f64,
         radius_2: f64,
     }
 
     impl Neuron {
-        pub fn new(x: f64, y: f64, z: f64, class: ClassNeyron) -> Self {
+        pub fn new(x: f64,
+                   y: f64,
+                   z: f64,
+                   class: ClassNeyron,
+                   weight_coise:f64,
+                   weight_neuron:f64,
+                   weight:f64) -> Self {
             Neuron {
                 class,
                 x,
                 y,
                 z,
-                weights: 0.5,
-                weights_2: -0.2,
-                radius_1: 0.5,
+                weights_neuron: weight_neuron + weight,
+                weights_choise: weight_coise + weight,
+                radius_1: 0.5, //TODO: заменить на динамические значения
                 radius_2: 0.8,
             }
         }
 
-        pub fn choise_action_neyron(&self) -> Choise {
-            if self.weights * self.weights_2 > 0.5 {
+        pub fn choise_action_neyron(&self, weight: Option<&f64>) -> Choise {
+            let weight_value = weight.unwrap_or(&0.0);
+            if self.weights_choise * *weight_value == 0.5 {
                 Choise::ReturnOutput
-            } else if self.weights * self.weights_2 < 0.0 {
+            } else if self.weights_choise * weight_value < 0.0 {
                 Choise::AddNeuron
             } else {
                 Choise::ActivateNeuron
