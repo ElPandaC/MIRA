@@ -62,9 +62,32 @@ mod neuron_network {
         IntermediateNeuron,
     }
 
-    pub enum Choise_Intermation_Neuron{
-        AddNeuron,
-        AddIntermation_Neuron
+    pub enum Choise_Intermation_Neuron_Operations {
+        Addition,
+        Subtraction,
+        Division,
+        Multiplication,
+    }
+
+    impl Choise_Intermation_Neuron_Operations{
+        pub fn new(weight_choise:f64, weight: f64) -> Choise_Intermation_Neuron_Operations{
+            //TODO: Добавить выбор весов активации
+            if weight_choise * weight > 0.5 {
+                Choise_Intermation_Neuron_Operations::Addition
+            } else if weight_choise * weight > 0.0 {
+                Choise_Intermation_Neuron_Operations::Subtraction
+            } else if weight_choise * weight > -0.5{
+                Choise_Intermation_Neuron_Operations::Division
+            } else {
+                Choise_Intermation_Neuron_Operations::Multiplication
+            }
+        }
+    }
+
+    pub enum Choise_Intermation_Neuron {
+        AddNeuron(Choise_Intermation_Neuron_Operations),
+        AddIntermation_Neuron(Choise_Intermation_Neuron_Operations),
+        Activate_Next_Neuron(Choise_Intermation_Neuron_Operations),
     }
 
     pub enum Choise {
@@ -85,7 +108,8 @@ mod neuron_network {
                                           0.0,
                                           ClassNeyron::Neyron,
                                           1.0,
-                                          1.0, 1.0 )], //TODO: Добавить динамические веса
+                                          1.0,
+                                          1.0)],
             }
         }
 
@@ -93,7 +117,7 @@ mod neuron_network {
             let mut new_neurons = Vec::new();
             if let Some(neuron) = self.neurons.iter()
                 .find(|a| a.x == x && a.y == y && a.z == z) {
-                let weight_signal = weight*(neuron.weights_neuron+neuron.weights_choise);
+                let weight_signal = weight * (neuron.weights_neuron + neuron.weights_choise);
 
                 println!("Найден элемент: x={}, y={}, z={}", neuron.x, neuron.y, neuron.z);
                 match neuron.class {
@@ -121,7 +145,7 @@ mod neuron_network {
                                     println!("Найден элемент: x={}, y={}, z={}", neuron.x, neuron.y, neuron.z);
                                     match neuron.class {
                                         ClassNeyron::Neyron => {
-                                            match neuron.choise_action_neyron(weight) {
+                                            match neuron.choise_action_neyron(weight_signal) {
                                                 Choise::ReturnOutput => {
                                                     println!("Нейрон активировал функцию ответа пользователю");
                                                     //TODO: Добавить функцию ответ пользователю
@@ -145,10 +169,122 @@ mod neuron_network {
                                                         neuron.y + weight_signal,
                                                         neuron.z + weight_signal,
                                                         weight_signal
-                                                    );}
+                                                    );
+                                                }
                                             }
                                         }
-                                        _ => {}
+                                        ClassNeyron::IntermediateNeuron => {
+                                            match neuron.choise_action_intermation_neuron(weight_signal) {
+                                                Choise_Intermation_Neuron::Activate_Next_Neuron(choise) => {
+                                                    match choise {
+                                                        Choise_Intermation_Neuron_Operations::Addition => {
+                                                            //TODO: Добавить функцию поиска и активации ближайшего промежуточного нейрона с операцией сложения
+                                                            let weight_signal = weight + (neuron.weights_neuron + neuron.weights_choise);
+                                                        }
+                                                        Choise_Intermation_Neuron_Operations::Subtraction => {
+                                                            //TODO: Добавить функцию поиска и активации ближайшего промежуточного нейрона с операцией вычитания
+                                                            let weight_signal = weight - (neuron.weights_neuron + neuron.weights_choise);
+                                                        }
+                                                        Choise_Intermation_Neuron_Operations::Division => {
+                                                            //TODO: Добавить функцию поиска и активации ближайшего промежуточного нейрона с операцией деления
+                                                            let weight_signal = weight / (neuron.weights_neuron + neuron.weights_choise);
+                                                        }
+                                                        Choise_Intermation_Neuron_Operations::Multiplication => {
+                                                            //TODO: Добавить функцию поиска и активации ближайшего промежуточного нейрона с операцией умножения
+                                                            let weight_signal = weight * (neuron.weights_neuron + neuron.weights_choise);
+                                                        }
+                                                    }
+                                                }
+                                                Choise_Intermation_Neuron::AddNeuron(choise) => {
+                                                    match choise {
+                                                        Choise_Intermation_Neuron_Operations::Addition => {
+                                                            //TODO: Добавить функцию создания нового нейрона с операцией сложения
+                                                            let weight_signal = weight + (neuron.weights_neuron + neuron.weights_choise);
+                                                            println!("Добавлен новый промежуточный нейрон");
+                                                            new_neurons.push(Neuron::new(neuron.x + weight_signal,
+                                                                                         neuron.y + weight_signal,
+                                                                                         neuron.z + weight_signal,
+                                                                                         ClassNeyron::Neyron,
+                                                                                         neuron.weights_neuron,
+                                                                                         neuron.weights_choise,
+                                                                                         weight_signal));
+                                                            self.neurons.extend(new_neurons);
+                                                        }
+                                                        Choise_Intermation_Neuron_Operations::Subtraction => {
+                                                            //TODO: Добавить функцию создания нового нейрона с операцией вычитания
+                                                            let weight_signal = weight - (neuron.weights_neuron + neuron.weights_choise);
+                                                        }
+                                                        Choise_Intermation_Neuron_Operations::Division => {
+                                                            //TODO: Добавить функцию создания нового нейрона с операцией деления
+                                                            let weight_signal = weight / (neuron.weights_neuron + neuron.weights_choise);
+                                                        }
+                                                        Choise_Intermation_Neuron_Operations::Multiplication => {
+                                                            //TODO: Добавить функцию создания нового нейрона с операцией умножения
+                                                            let weight_signal = weight * (neuron.weights_neuron + neuron.weights_choise);
+                                                        }
+                                                    }
+                                                }
+                                                Choise_Intermation_Neuron::AddIntermation_Neuron(choise) => {
+                                                    match choise {
+                                                        Choise_Intermation_Neuron_Operations::Addition => {
+                                                            //TODO: Добавить функцию создания нового промежуточного нейрона с операцией сложения
+                                                            let weight_signal = weight + (neuron.weights_neuron + neuron.weights_choise);
+                                                            println!("Добавлен новый промежуточный нейрон");
+                                                            new_neurons.push(Neuron::new(neuron.x + weight_signal,
+                                                                                         neuron.y + weight_signal,
+                                                                                         neuron.z + weight_signal,
+                                                                                         ClassNeyron::IntermediateNeuron,
+                                                                                         neuron.weights_neuron,
+                                                                                         neuron.weights_choise,
+                                                                                         weight_signal));
+                                                            self.neurons.extend(new_neurons);
+                                                        }
+                                                        Choise_Intermation_Neuron_Operations::Subtraction => {
+                                                            //TODO: Добавить функцию создания нового промежуточного нейрона с операцией вычитания
+                                                            let weight_signal = weight - (neuron.weights_neuron + neuron.weights_choise);
+                                                            println!("Добавлен новый промежуточный нейрон");
+                                                            new_neurons.push(Neuron::new(neuron.x + weight_signal,
+                                                                                         neuron.y + weight_signal,
+                                                                                         neuron.z + weight_signal,
+                                                                                         ClassNeyron::IntermediateNeuron,
+                                                                                         neuron.weights_neuron,
+                                                                                         neuron.weights_choise,
+                                                                                         weight_signal));
+
+                                                            self.neurons.extend(new_neurons);
+                                                        }
+                                                        Choise_Intermation_Neuron_Operations::Division => {
+                                                            //TODO: Добавить функцию создания нового промежуточного нейрона с операцией деления
+                                                            let weight_signal = weight / (neuron.weights_neuron + neuron.weights_choise);
+                                                            println!("Добавлен новый промежуточный нейрон");
+                                                            new_neurons.push(Neuron::new(neuron.x + weight_signal,
+                                                                                         neuron.y + weight_signal,
+                                                                                         neuron.z + weight_signal,
+                                                                                         ClassNeyron::IntermediateNeuron,
+                                                                                         neuron.weights_neuron,
+                                                                                         neuron.weights_choise,
+                                                                                         weight_signal));
+
+                                                            self.neurons.extend(new_neurons);
+                                                        }
+                                                        Choise_Intermation_Neuron_Operations::Multiplication => {
+                                                            //TODO: Добавить функцию создания нового промежуточного нейрона с операцией умножения
+                                                            let weight_signal = weight * (neuron.weights_neuron + neuron.weights_choise);
+                                                            println!("Добавлен новый промежуточный нейрон");
+                                                            new_neurons.push(Neuron::new(neuron.x + weight_signal,
+                                                                                         neuron.y + weight_signal,
+                                                                                         neuron.z + weight_signal,
+                                                                                         ClassNeyron::IntermediateNeuron,
+                                                                                         neuron.weights_neuron,
+                                                                                         neuron.weights_choise,
+                                                                                         weight_signal));
+
+                                                            self.neurons.extend(new_neurons);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
 
                                 } else {
@@ -173,13 +309,12 @@ mod neuron_network {
                                         neuron.z + weight_signal,
                                         weight_signal
                                     )
-
                                 }
                             }
                         }
                     }
                     ClassNeyron::IntermediateNeuron => {
-                        neuron.choise_action_intermation_neuron();
+                        neuron.choise_action_intermation_neuron(weight_signal);
                     }
                 }
 
@@ -209,9 +344,9 @@ mod neuron_network {
                    y: f64,
                    z: f64,
                    class: ClassNeyron,
-                   weight_coise:f64,
-                   weight_neuron:f64,
-                   weight:f64) -> Self {
+                   weight_coise: f64,
+                   weight_neuron: f64,
+                   weight: f64) -> Self {
             Neuron {
                 class,
                 x,
@@ -226,17 +361,26 @@ mod neuron_network {
 
         pub fn choise_action_neyron(&self, weight: f64) -> Choise {
             //TODO: Добавить выбор весов активации
-            if self.weights_choise * weight == 0.5 {
+            if self.weights_choise * weight > 0.5 {
                 Choise::ReturnOutput
-            } else if self.weights_choise * weight < 0.0 {
+            } else if self.weights_choise * weight > 0.0 {
                 Choise::AddNeuron
             } else {
                 Choise::ActivateNeuron
             }
         }
 
-        pub fn choise_action_intermation_neuron(&self) -> Choise_Intermation_Neuron {
-            //TODO Добавить выбор действия для промежуточного нейрона
+        pub fn choise_action_intermation_neuron(&self, weight: f64) -> Choise_Intermation_Neuron {
+            //TODO: Добавить выбор весов активации
+            let operation_choise = Choise_Intermation_Neuron_Operations::new(self.weights_choise,weight);
+
+            if self.weights_choise * weight == 0.5 {
+                Choise_Intermation_Neuron::AddNeuron(operation_choise)
+            } else if self.weights_choise * weight < 0.0 {
+                Choise_Intermation_Neuron::AddIntermation_Neuron(operation_choise)
+            } else {
+                Choise_Intermation_Neuron::Activate_Next_Neuron(operation_choise)
+            }
         }
 
         pub fn sinaps_operations(&self) {
