@@ -85,10 +85,11 @@ mod neuron_network {
             }
         }
 
-        pub fn activate_neurons(&mut self, x: f64, y: f64, z: f64, weight: Option<&f64>) {
+        pub fn activate_neurons(&mut self, x: f64, y: f64, z: f64, weight: f64) {
             let mut new_neurons = Vec::new();
             if let Some(neuron) = self.neurons.iter()
                 .find(|a| a.x == x && a.y == y && a.z == z) {
+                let weight_signal = weight*(neuron.weights_neuron+neuron.weights_choise);
 
                 println!("Найден элемент: x={}, y={}, z={}", neuron.x, neuron.y, neuron.z);
                 match neuron.class {
@@ -96,19 +97,80 @@ mod neuron_network {
                         match neuron.choise_action_neyron(weight) {
                             Choise::ReturnOutput => {
                                 println!("Нейрон активировал функцию ответа пользователю");
+                                //TODO: Добавить функцию ответ пользователю
                             }
                             Choise::AddNeuron => {
                                 println!("Добавлен новый нейрон");
-                                new_neurons.push(Neuron::new(neuron.x + ((neuron.weights_neuron+neuron.weights_choise)*weight.unwrap_or(&0.0)),
-                                                             neuron.y + ((neuron.weights_neuron+neuron.weights_choise)*weight.unwrap_or(&0.0)),
-                                                             neuron.z + ((neuron.weights_neuron+neuron.weights_choise)*weight.unwrap_or(&0.0)),
+                                new_neurons.push(Neuron::new(neuron.x + weight_signal,
+                                                             neuron.y + weight_signal,
+                                                             neuron.z + weight_signal,
                                                              ClassNeyron::Neyron,
                                                              neuron.weights_neuron,
                                                              neuron.weights_choise,
-                                                             *weight.unwrap_or(&0.0)));
+                                                             weight_signal));
                             }
                             Choise::ActivateNeuron => {
                                 println!("Нейрон активировал функцию активации нейрона");
+                                if let Some(neuron) = self.neurons.iter()
+                                    .find(|a| a.x == x && a.y == y && a.z == z) {
+
+                                    println!("Найден элемент: x={}, y={}, z={}", neuron.x, neuron.y, neuron.z);
+                                    match neuron.class {
+                                        ClassNeyron::Neyron => {
+                                            match neuron.choise_action_neyron(weight) {
+                                                Choise::ReturnOutput => {
+                                                    println!("Нейрон активировал функцию ответа пользователю");
+                                                    //TODO: Добавить функцию ответ пользователю
+                                                }
+                                                Choise::AddNeuron => {
+                                                    println!("Добавлен новый промежуточный нейрон");
+                                                    new_neurons.push(Neuron::new(neuron.x + weight_signal,
+                                                                                 neuron.y + weight_signal,
+                                                                                 neuron.z + weight_signal,
+                                                                                 ClassNeyron::IntermediateNeuron,
+                                                                                 neuron.weights_neuron,
+                                                                                 neuron.weights_choise,
+                                                                                 weight_signal));
+
+                                                    self.neurons.extend(new_neurons);
+                                                }
+                                                Choise::ActivateNeuron => {
+                                                    println!("Нейрон активировал функцию активации нейрона");
+                                                    self.activate_neurons(
+                                                        neuron.x + weight_signal,
+                                                        neuron.y + weight_signal,
+                                                        neuron.z + weight_signal,
+                                                        weight_signal
+                                                    );}
+                                            }
+                                        }
+                                        _ => {}
+                                    }
+
+                                } else {
+                                    println!("Элемент не найден");
+                                    println!("Создаю новый промежуточный нейрон с координатами x: {}, y = {}, z = {}",
+                                             neuron.x + weight_signal,
+                                             neuron.y + weight_signal,
+                                             neuron.z + weight_signal);
+
+                                    new_neurons.push(Neuron::new(neuron.x + weight_signal,
+                                                                 neuron.y + weight_signal,
+                                                                 neuron.z + weight_signal,
+                                                                 ClassNeyron::IntermediateNeuron,
+                                                                 neuron.weights_neuron,
+                                                                 neuron.weights_choise,
+                                                                 weight_signal));
+                                    self.neurons.extend(new_neurons);
+                                    println!("Новый промежуточный нейрон создан!");
+                                    self.activate_neurons(
+                                        neuron.x + weight_signal,
+                                        neuron.y + weight_signal,
+                                        neuron.z + weight_signal,
+                                        weight_signal
+                                    )
+
+                                }
                             }
                         }
                     }
@@ -123,8 +185,6 @@ mod neuron_network {
             } else {
                 println!("Элемент не найден");
             }
-
-            self.neurons.extend(new_neurons);
         }
 
         pub fn get_neurons(&self) -> &Vec<Neuron> {
@@ -163,11 +223,11 @@ mod neuron_network {
             }
         }
 
-        pub fn choise_action_neyron(&self, weight: Option<&f64>) -> Choise {
-            let weight_value = weight.unwrap_or(&0.0);
-            if self.weights_choise * *weight_value == 0.5 {
+        pub fn choise_action_neyron(&self, weight: f64) -> Choise {
+            //TODO: Добавить выбор весов активации
+            if self.weights_choise * weight == 0.5 {
                 Choise::ReturnOutput
-            } else if self.weights_choise * weight_value < 0.0 {
+            } else if self.weights_choise * weight < 0.0 {
                 Choise::AddNeuron
             } else {
                 Choise::ActivateNeuron
@@ -223,8 +283,8 @@ fn main() {
                 match chrars_list.char_map.get(&input_chars) {
                     Some(value) => {
                         println!("Вес символа {}: {:?}", input_chars, value);
-                        let weight = chrars_list.char_map.get(&input_chars);
-                        neuron_network.activate_neurons(0.0, 0.0, 0.0, weight);
+                        let weight = chrars_list.char_map.get(&input_chars).unwrap();
+                        neuron_network.activate_neurons(0.0, 0.0, 0.0, *weight);
                         display_neurons_as_points(neuron_network.get_neurons());
                         println!("Отображение 3D-графика нейронов...");
                         plot_neurons_3d(neuron_network.get_neurons());
