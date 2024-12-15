@@ -59,8 +59,12 @@ impl AllChars {
 mod neuron_network {
     pub enum ClassNeyron {
         Neyron,
-        Sinaps,
         IntermediateNeuron,
+    }
+
+    pub enum Choise_Intermation_Neuron{
+        AddNeuron,
+        AddIntermation_Neuron
     }
 
     pub enum Choise {
@@ -177,9 +181,6 @@ mod neuron_network {
                     ClassNeyron::IntermediateNeuron => {
                         neuron.choise_action_intermation_neuron();
                     }
-                    ClassNeyron::Sinaps => {
-                        neuron.sinaps_operations();
-                    }
                 }
 
             } else {
@@ -234,7 +235,7 @@ mod neuron_network {
             }
         }
 
-        pub fn choise_action_intermation_neuron(&self) {
+        pub fn choise_action_intermation_neuron(&self) -> Choise_Intermation_Neuron {
             //TODO Добавить выбор действия для промежуточного нейрона
         }
 
