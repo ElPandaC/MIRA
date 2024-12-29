@@ -1,6 +1,22 @@
 use std::collections::HashMap;
 
-struct AllChars {
+pub struct InputChars{
+    input_string: String,
+    type_of_input: String,
+    summary: String,
+}
+
+impl InputChars {
+    pub fn new() -> InputChars {
+        InputChars {//TODO: Убрать заглушку
+            input_string: "00".to_string(),
+            type_of_input: "00".to_string(),
+            summary: "00".to_string()
+        }
+    }
+}
+
+pub struct AllChars {
     all_chars: Vec<char>,
     length: i32,
     weights: Vec<f64>,
@@ -71,6 +87,16 @@ impl AllChars {
         self.char_map.get(&c).unwrap()
     }
 
+    pub fn get_weight_from_char(&mut self, c: f64) -> String {
+        if let Some(key) = find_key_by_value(&self.char_map, c) {
+            println!("Found key: {}", key);
+            key.to_string()
+        } else {
+            println!("Значение не найдено");
+            " ".to_string()
+        }
+    }
+
     fn add_char(&mut self, c: char) {
         if !self.all_chars.contains(&c) {
             self.length += 1;
@@ -80,6 +106,21 @@ impl AllChars {
             self.char_map.insert(c, weight);
         }
     }
+
+    pub fn clone(&self) -> AllChars{
+        AllChars {
+            all_chars: self.all_chars.clone(),
+            length: self.length,
+            weights: self.weights.clone(),
+            char_map: self.char_map.clone(),
+        }
+    }
 }
-
-
+fn find_key_by_value<'a>(map: &'a HashMap<char, f64>, value: f64) -> Option<&'a char> {
+    for (key, val) in map.iter() {
+        if *val == value {
+            return Some(key);
+        }
+    }
+    None
+}
